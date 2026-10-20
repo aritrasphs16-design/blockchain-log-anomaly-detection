@@ -41,43 +41,65 @@ export function MatrixTerminal() {
         style={{ scrollbarWidth: 'none' }}
       >
         <AnimatePresence initial={false}>
-          {rawLogs.map((log, idx) => (
-            <motion.div
-              key={idx + log.raw_line}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-start gap-2 break-all"
-            >
-              <span
-                className="shrink-0 mono-data"
-                style={{ color: log.is_anomaly ? 'var(--crit)' : 'var(--text-faint)' }}
+          {rawLogs.map((log, idx) => {
+            const raw = log.raw_line || "";
+            const isBlocked = raw.includes("BLOCKED_BY_AUTONOMOUS_FIREWALL") || raw.includes("BLOCKED");
+            const isAnomaly = log.is_anomaly || isBlocked;
+            const is4xx = raw.includes(" 403 ") || raw.includes(" 404 ") || raw.includes(" 401 ");
+            const is5xx = raw.includes(" 500 ") || raw.includes(" 502 ") || raw.includes(" 503 ");
+            
+            let textColor = 'var(--ok)'; // clean 200 OK
+            let promptSymbol = '›';
+            let promptColor = 'var(--text-faint)';
+            
+            if (isAnomaly || isBlocked) {
+              textColor = isBlocked ? '#fb923c' : 'var(--crit)';
+              promptSymbol = isBlocked ? '⊘' : '!';
+              promptColor = isBlocked ? '#fb923c' : 'var(--crit)';
+            } else if (is4xx || is5xx) {
+              textColor = '#fbbf24'; // warning amber
+              promptSymbol = '⚠';
+              promptColor = '#fbbf24';
+            }
+
+            return (
+              <motion.div
+                key={idx + raw}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-start gap-2 break-all"
               >
-                {log.is_anomaly ? '!' : '›'}
-              </span>
-              <span
-                className="min-w-0"
-                style={{
-                  color: log.is_anomaly ? 'var(--crit)' : 'var(--ok)',
-                  fontWeight: log.is_anomaly ? 600 : 400,
-                }}
-              >
-                {log.raw_line}
-              </span>
-              {log.is_anomaly && (
                 <span
-                  className="shrink-0 px-1.5 py-0.5 mono-data text-[9px] uppercase tracking-wider"
+                  className="shrink-0 mono-data font-bold"
+                  style={{ color: promptColor }}
+                >
+                  {promptSymbol}
+                </span>
+                <span
+                  className="min-w-0"
                   style={{
-                    background: 'var(--crit-bg)',
-                    border: '1px solid var(--crit-border)',
-                    color: 'var(--crit)',
-                    borderRadius: 'var(--radius-badge)',
+                    color: textColor,
+                    fontWeight: isAnomaly ? 600 : 400,
                   }}
                 >
-                  {log.attack_type} Blocked
+                  {raw}
                 </span>
-              )}
-            </motion.div>
-          ))}
+                {isAnomaly && (
+                  <span
+                    className="shrink-0 px-1.5 py-0.5 mono-data text-[9px] uppercase tracking-wider font-bold"
+                    style={{
+                      background: isBlocked ? 'rgba(251, 146, 60, 0.15)' : 'var(--crit-bg)',
+                      border: `1px solid ${isBlocked ? 'rgba(251, 146, 60, 0.4)' : 'var(--crit-border)'}`,
+                      color: isBlocked ? '#fb923c' : 'var(--crit)',
+                      borderRadius: 'var(--radius-badge)',
+                    }}
+                  >
+                    {isBlocked ? 'FIREWALL BLOCKED' : `${log.attack_type || 'ANOMALY'} BLOCKED`}
+                  </span>
+                )}
+              </motion.div>
+            );
+          })}
           {rawLogs.length === 0 && (
             <div className="mono-data" style={{ color: 'var(--text-faint)' }}>
               $ listening on inbound traffic stream…

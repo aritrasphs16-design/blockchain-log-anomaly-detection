@@ -16,23 +16,32 @@ export function ThreatGlobe() {
       const startX = 200 + Math.cos(angle) * radius;
       const startY = 200 + Math.sin(angle) * radius;
       
-      const ip = latestEvent.raw_line ? latestEvent.raw_line.split(' ')[0] : 'UNKNOWN_IP';
+      const ip = latestEvent.raw_line ? latestEvent.raw_line.split(' ')[0] : '127.0.0.1';
+      const attackType = latestEvent.attack_type || 'ANOMALY';
+      
+      let attackColor = '#fb7185';
+      if (attackType === 'SQL_INJECTION') attackColor = '#f43f5e';
+      else if (attackType === 'XSS') attackColor = '#ec4899';
+      else if (attackType === 'PATH_TRAVERSAL') attackColor = '#fb923c';
+      else if (attackType === 'BRUTE_FORCE') attackColor = '#f59e0b';
+      else if (attackType === 'FIREWALL_BLOCKED') attackColor = '#f97316';
+      else if (latestEvent.risk === 'HIGH') attackColor = '#fb923c';
 
       const newAttack = {
         id: Date.now() + Math.random(),
         startX,
         startY,
-        type: latestEvent.attack_type,
+        type: attackType,
         ip: ip,
-        color: latestEvent.risk === 'CRITICAL' ? '#fb7185' : '#fb923c'
+        color: attackColor
       };
 
-      setAttacks(prev => [...prev, newAttack].slice(-10)); // Keep last 10 lasers
+      setAttacks(prev => [...prev, newAttack].slice(-10));
 
-      // Remove after animation completes
+      // Keep visible for 3.5 seconds so operator can inspect vector
       setTimeout(() => {
         setAttacks(prev => prev.filter(a => a.id !== newAttack.id));
-      }, 2000);
+      }, 3500);
     }
   }, [latestEvent]);
 

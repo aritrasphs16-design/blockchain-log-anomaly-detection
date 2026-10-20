@@ -175,7 +175,7 @@ function broadcastState(logMsg = null, eventData = null) {
 }
 
 // REST: Reset telemetry & anomaly counter & historical ledger batches
-app.all(['/reset', '/api/reset', '/batches/reset', '/batches/clear'], (req, res) => {
+app.all(['/reset', '/api/reset', '/batches/reset', '/batches/clear'], async (req, res) => {
     anomalyCount = 0;
     currentServerStatus = "SECURE";
     logBatch = [];
@@ -184,6 +184,11 @@ app.all(['/reset', '/api/reset', '/batches/reset', '/batches/clear'], (req, res)
     currentHash = "0x0000...0000";
     currentIpfsCid = "N/A";
     previousChainedRoot = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    // Unblock target server firewall
+    try {
+        await axios.post(`${TARGET_URL}/reset`).catch(() => {});
+    } catch(e) {}
 
     const resetPayload = {
         type: 'RESET_LEDGER',
@@ -454,7 +459,11 @@ async function analyzeLogLine(line) {
     const method = methodMatch ? methodMatch[1] : "GET";
     
     const urlMatch = line.match(/"(?:GET|POST|PUT|DELETE) ([^ ]+) /);
-    const endpoint = urlMatch ? urlMatch[1] : "/";
+    let endpoint = urlMatch ? urlMatch[1] : "/";
+    let decodedEndpoint = endpoint;
+    try {
+        decodedEndpoint = decodeURIComponent(endpoint);
+    } catch (e) {}
     
     const statusMatch = line.match(/HTTP\/1\.[01]" (\d{3}) /);
     const status = statusMatch ? parseInt(statusMatch[1]) : 200;
@@ -462,23 +471,37 @@ async function analyzeLogLine(line) {
     const byteMatch = line.match(/HTTP\/1\.[01]" \d{3} (\d+)/);
     const bytes = byteMatch ? parseInt(byteMatch[1]) : Math.floor(Math.random() * 200) + 400;
 
-    let isObviousAttack = line.includes("OR") || line.includes("1=1") || line.includes("SELECT") || line.includes("admin'") || line.includes("wp-config") || line.includes(".env") || bytes > 2000;
+    const isFirewallBlocked = line.includes("BLOCKED_BY_AUTONOMOUS_FIREWALL") || (status === 403 && line.includes("BLOCKED"));
+    const isSQLi = decodedEndpoint.includes("OR") || decodedEndpoint.includes("1=1") || decodedEndpoint.includes("SELECT") || decodedEndpoint.includes("DROP") || decodedEndpoint.includes("UNION") || decodedEndpoint.includes("admin'");
+    const isXSS = decodedEndpoint.includes("<script>") || decodedEndpoint.includes("onerror") || decodedEndpoint.includes("alert");
+    const isTraversal = decodedEndpoint.includes("../") || decodedEndpoint.includes("etc/passwd");
+    const isCanary = decodedEndpoint.includes("wp-config") || decodedEndpoint.includes(".env");
+
+    let isObviousAttack = isSQLi || isXSS || isTraversal || isCanary || isFirewallBlocked || bytes > 2000;
+
+    let defaultAttackType = "BENIGN";
+    if (isSQLi) defaultAttackType = "SQL_INJECTION";
+    else if (isXSS) defaultAttackType = "XSS";
+    else if (isTraversal) defaultAttackType = "PATH_TRAVERSAL";
+    else if (isCanary) defaultAttackType = "HONEYPOT_TRIGGERED";
+    else if (isFirewallBlocked) defaultAttackType = "FIREWALL_BLOCKED";
+    else if (isObviousAttack) defaultAttackType = "OBVIOUS_ATTACK";
 
     let mlData = {
         is_anomaly: isObviousAttack,
-        attack_type: isObviousAttack ? "OBVIOUS_ATTACK" : "BENIGN",
-        rf_score: 0.0,
+        attack_type: defaultAttackType,
+        rf_score: isObviousAttack ? 0.95 : 0.0,
         behavior_score: 0.0,
         sequence_score: 0.0,
-        final_score: 0.0,
+        final_score: isObviousAttack ? 0.92 : 0.0,
         confidence: 1.0,
-        risk: isObviousAttack ? "HIGH" : "LOW"
+        risk: isObviousAttack ? "CRITICAL" : "LOW"
     };
 
     try {
         const response = await axios.post(ML_API_URL, {
             method: method,
-            endpoint: endpoint,
+            endpoint: decodedEndpoint,
             bytes: bytes,
             interval_ms: interval_ms,
             status: status
@@ -486,10 +509,18 @@ async function analyzeLogLine(line) {
         
         mlData = response.data;
         mlData.raw_line = line;
-        if (mlData.is_anomaly) isObviousAttack = true;
+        if (isObviousAttack) {
+            mlData.is_anomaly = true;
+            if (defaultAttackType !== "BENIGN") {
+                mlData.attack_type = defaultAttackType;
+            }
+            if (!mlData.risk || mlData.risk === "LOW") {
+                mlData.risk = isFirewallBlocked ? "HIGH" : "CRITICAL";
+            }
+        }
 
     } catch (err) {
-        // Fallback
+        mlData.raw_line = line;
     }
     
     const logEntry = {

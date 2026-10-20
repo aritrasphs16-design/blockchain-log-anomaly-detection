@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import re
+from urllib.parse import unquote
 from sklearn.ensemble import RandomForestClassifier, IsolationForest
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
@@ -27,16 +28,17 @@ idx_to_type = {i: t for i, t in enumerate(ATTACK_TYPES)}
 def extract_features(row):
     """ Extract numerical features from log data """
     endpoint = str(row.get('endpoint', ''))
+    decoded_endpoint = unquote(endpoint)
     
     bytes_trans = int(row.get('bytes', 500))
     interval = int(row.get('interval_ms', 100))
     status = int(row.get('status', 200))
     is_post = 1 if row.get('method', 'GET').upper() == 'POST' else 0
-    url_length = len(endpoint)
+    url_length = len(decoded_endpoint)
     
-    has_sql = 1 if re.search(r"('|OR|SELECT|DROP|--|#)", endpoint, re.IGNORECASE) else 0
-    has_xss = 1 if re.search(r"(<script>|onerror|alert|<img)", endpoint, re.IGNORECASE) else 0
-    has_traversal = 1 if "../" in endpoint or "..\\" in endpoint else 0
+    has_sql = 1 if re.search(r"('|OR|SELECT|DROP|UNION|--|#)", decoded_endpoint, re.IGNORECASE) or "%27" in endpoint.lower() or "%20or%20" in endpoint.lower() else 0
+    has_xss = 1 if re.search(r"(<script>|onerror|alert|<img|javascript:)", decoded_endpoint, re.IGNORECASE) or "%3cscript" in endpoint.lower() else 0
+    has_traversal = 1 if "../" in decoded_endpoint or "..\\" in decoded_endpoint or "..%2f" in endpoint.lower() or "etc/passwd" in decoded_endpoint else 0
     
     # New features: rate proxy (inverse interval), is_4xx, is_5xx
     rate = 1000.0 / (interval + 1)

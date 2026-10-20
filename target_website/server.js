@@ -21,6 +21,17 @@ const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 // 1. Dynamic Firewall Inspection Middleware
 app.use((req, res, next) => {
+    // Control & simulation endpoints must never be blocked by firewall
+    if (
+        req.path.startsWith('/simulate') || 
+        req.path.startsWith('/stop') || 
+        req.path.startsWith('/firewall') || 
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/reset')
+    ) {
+        return next();
+    }
+
     const clientIp = req.ip || req.connection.remoteAddress || "127.0.0.1";
     // Check if IP is blocked by smart contract slash event
     if (blockedIPs.has(clientIp) || blockedIPs.has(clientIp.replace('::ffff:', ''))) {
@@ -33,6 +44,13 @@ app.use((req, res, next) => {
         });
     }
     next();
+});
+
+// Reset firewall quarantine
+app.all(['/reset', '/firewall/reset'], (req, res) => {
+    blockedIPs.clear();
+    console.log("🛡️ [Target Server] Firewall blacklist cleared by administrator.");
+    res.json({ success: true, message: "Firewall reset. All IPs unblocked." });
 });
 
 // 2. Logging and telemetry middleware
