@@ -249,6 +249,8 @@ export function SSEProvider({ children }) {
       if (eventSource) eventSource.close();
       clearInterval(tickInterval);
     };
+  }, [agentUrl]);
+
   const resetThreats = useCallback(async () => {
     setAnomalies(0);
     setStatus("SECURE");
