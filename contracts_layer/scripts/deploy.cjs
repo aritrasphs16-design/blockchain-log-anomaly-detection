@@ -61,19 +61,15 @@ async function main() {
     logTokenAddress: logTokenAddress,
     anchorAddress: anchorAddress,
     serverAddress: server.address,
-    serverPrivateKey: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
     auditorAddress: auditor.address,
-    auditorPrivateKey: "0x5de4111afa1a4b94908f83103eb2f95408e82d334575c34e8976b7e6417730e6",
     logTokenAbi: logTokenArtifact.abi,
     anchorAbi: anchorArtifact.abi
   };
 
   // 1. Text file for backwards compatibility
-  const outputText = `
-LOG_TOKEN_ADDRESS="${logTokenAddress}"
+  const outputText = `LOG_TOKEN_ADDRESS="${logTokenAddress}"
 ANCHOR_ADDRESS="${anchorAddress}"
 SERVER_ADDRESS="${server.address}"
-SERVER_PRIVATE_KEY="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 `;
   fs.writeFileSync(path.join(__dirname, "../deployed_addresses.txt"), outputText);
   fs.writeFileSync(path.join(__dirname, "../deployed_contracts.json"), JSON.stringify(contractData, null, 2));

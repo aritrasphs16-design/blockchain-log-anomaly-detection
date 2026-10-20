@@ -56,3 +56,9 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# AI Assistant files & Agent scratchpads
+AGENTS.md
+CLAUDE.md
+*/AGENTS.md
+*/CLAUDE.md

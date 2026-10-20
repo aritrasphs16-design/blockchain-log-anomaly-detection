@@ -59,7 +59,9 @@ function loadDeployedConfig() {
 
 let deployedConfig = loadDeployedConfig();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || deployedConfig.serverPrivateKey || "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+// Hardhat test account #1 fallback key for local isolated development only
+const LOCAL_DEV_FALLBACK_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY || process.env.PRIVATE_KEY || LOCAL_DEV_FALLBACK_KEY;
 const ANCHOR_CONTRACT_ADDRESS = process.env.ANCHOR_CONTRACT_ADDRESS || deployedConfig.anchorAddress;
 const TOKEN_CONTRACT_ADDRESS = process.env.TOKEN_CONTRACT_ADDRESS || deployedConfig.logTokenAddress;
 const LOG_FILE = process.env.LOG_FILE_PATH || path.join(__dirname, '../target_website/access.log');
