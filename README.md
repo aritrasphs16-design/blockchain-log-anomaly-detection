@@ -167,7 +167,9 @@ Log Entry 3 ──► Keccak256 ──► Leaf L3 ──┘
 ```
 
 1. **Leaf Generation**: Every raw access log entry is hashed via Ethereum's native cryptographic primitive:
-   $$\text{Leaf}_i = \text{keccak256}(\text{bytes}(\text{log\_line}_i))$$
+   ```solidity
+   Leaf[i] = keccak256(bytes(raw_log_entry))
+   ```
 2. **Deterministic Tree Assembly**: Leaves are paired and hashed recursively in lexicographical order (OpenZeppelin standard).
 3. **Decentralized Evidence Vault**: The entire raw log batch is converted into canonical JSON and pinned to IPFS, producing a content addressable identifier (`CID`).
 4. **On-Chain Anchor**: The Merkle root, timestamp, server identifier, and previous root hash are submitted to the `AdvancedLogAnchor` smart contract, establishing a cryptographically tamper-evident historical audit ledger.
@@ -186,7 +188,14 @@ The smart contract layer enforces economic security and decentralization through
 - **Server Staking**: Edge nodes lock **500 `$LOG`** in escrow before receiving authorization to anchor log roots.
 - **Root Anchoring**: Servers periodically commit `anchorHash(bytes32 _merkleRoot)` which indexes current and previous roots.
 - **Proof-of-Exploit Verification & Slashing**:
-  $$\text{verifyAndSlash}(server, root, proof[], maliciousLeaf)$$
+  ```solidity
+  function verifyAndSlash(
+      address serverAddress,
+      bytes32 root,
+      bytes32[] calldata proof,
+      bytes32 maliciousLogLeaf
+  ) external returns (bool);
+  ```
   When an independent auditor identifies a malicious payload in an anchored batch:
   1. The auditor submits the cryptographic Merkle proof on-chain via MetaMask.
   2. The contract verifies that the leaf belongs to the anchored root without needing the full dataset.
