@@ -1,0 +1,74 @@
+services:
+  target:
+    build: ./target_website
+    ports:
+      - "8080:8080"
+    volumes:
+      - blad_logs:/app/logs
+    environment:
+      - LOG_FILE_PATH=/app/logs/access.log
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ml:
+    build: ./ml_engine
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  blockchain:
+    build: ./contracts_layer
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}'", "--header=Content-Type:application/json", "-O", "-", "http://127.0.0.1:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  agent:
+    build: ./server_agent
+    ports:
+      - "4000:4000"
+    volumes:
+      - blad_logs:/app/logs
+    env_file: .env
+    environment:
+      - ML_URL=http://ml:5000/analyze
+      - BLOCKCHAIN_RPC=http://blockchain:8545
+      - LOG_FILE_PATH=/app/logs/access.log
+    depends_on:
+      ml:
+        condition: service_healthy
+      blockchain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AGENT_URL=http://localhost:4000
+    depends_on:
+      agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  blad_logs:

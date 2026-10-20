@@ -1,0 +1,58 @@
+# ============================================================
+# BLAD Platform — Root .gitignore
+# ============================================================
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Python & ML Engine Cache / Virtualenvs
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+*/venv/
+.venv/
+*/.venv/
+
+# Next.js Build Outputs
+.next/
+*/.next/
+out/
+*/out/
+build/
+*/build/
+*.tsbuildinfo
+
+# Hardhat & Smart Contract Artifacts / Cache
+contracts_layer/artifacts/
+contracts_layer/cache/
+*/artifacts/
+*/cache/
+
+# Local Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Runtime Log Files & Transient Storage
+*.log
+*/access.log
+*/server.log
+server_agent/ipfs_storage/
+
+# Personal / College Review Drafts & Credentials
+stuff/
+*Password*.txt
+*password*.txt
+
+# OS & Editor Metadata
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
