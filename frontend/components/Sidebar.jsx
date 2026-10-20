@@ -46,23 +46,71 @@ export function Sidebar({ open = false, onClose }) {
 
   return (
     <aside className={`shell-sidebar ${open ? 'is-open' : ''}`} aria-label="Primary navigation">
-      {/* Brand */}
-      <div className="nav-brand">
-        <div className="nav-brand-mark">
-          <Shield size={18} strokeWidth={2.5} />
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="nav-brand-name">BLAD</h1>
-          <p className="nav-brand-sub">Security Platform</p>
-        </div>
+      {/* Brand Header */}
+      <div className="nav-brand-container">
+        <Link href="/" onClick={onClose} className="nav-brand-content" style={{ textDecoration: 'none' }}>
+          <div className="nav-brand-emblem-wrap">
+            <svg
+              className="nav-brand-emblem"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="emblemGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#0284c7" />
+                </linearGradient>
+                <linearGradient id="emblemPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0f172a" />
+                  <stop offset="100%" stopColor="#080f1d" />
+                </linearGradient>
+              </defs>
+              {/* Outer Hex Shield Plate */}
+              <path
+                d="M16 2.5L27 7.5V15.5C27 22.2 22.3 28.2 16 30C9.7 28.2 5 22.2 5 15.5V7.5L16 2.5Z"
+                fill="url(#emblemPlate)"
+                stroke="url(#emblemGlow)"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              {/* Hexagonal Inner Perimeter */}
+              <polygon
+                points="16,8.5 21.5,11.5 21.5,17.5 16,20.5 10.5,17.5 10.5,11.5"
+                fill="none"
+                stroke="rgba(56, 189, 248, 0.45)"
+                strokeWidth="1.1"
+              />
+              {/* Cryptographic Core / Node */}
+              <circle cx="16" cy="14.5" r="2.5" fill="#38bdf8" />
+              <path
+                d="M16 8.5V12M16 17V20.5M10.5 14.5H13.5M18.5 14.5H21.5"
+                stroke="#38bdf8"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="nav-brand-pulse-dot" title="Core Sentinel Active" />
+          </div>
+
+          <div className="nav-brand-meta">
+            <div className="nav-brand-row">
+              <span className="nav-brand-title">BLAD</span>
+              <span className="nav-brand-pill">v2.4</span>
+            </div>
+            <p className="nav-brand-subtitle">SECURITY PLATFORM</p>
+          </div>
+        </Link>
+
+        {/* Strictly mobile-only drawer close button */}
         <button
           type="button"
           onClick={onClose}
-          className="topbar-icon-btn nav-close"
-          style={{ marginLeft: 'auto' }}
+          className="sidebar-close-btn"
           aria-label="Close navigation"
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       </div>
 
