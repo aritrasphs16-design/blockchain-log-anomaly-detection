@@ -6,12 +6,12 @@ import { ThreatGlobe } from "../components/ThreatGlobe";
 import { MLGauge } from "../components/MLGauge";
 import { MatrixTerminal } from "../components/MatrixTerminal";
 import { BlockchainVisualizer } from "../components/BlockchainVisualizer";
-import { Activity, ShieldAlert, CheckCircle2, ShieldX, Server, Database, Link as LinkIcon, Cpu, Zap, LayoutDashboard, Radio } from "lucide-react";
+import { Activity, ShieldAlert, CheckCircle2, ShieldX, Server, Database, Link as LinkIcon, Cpu, Zap, LayoutDashboard, Radio, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageHeader, StatCard, Badge, LiveDot, EmptyState } from "../components/ui";
 
 export default function Dashboard() {
-  const { status, anomalies, latestEvent, logs, threatsList, connectionStatus, totalRequests, chartData, blockchainStatus, ipfsStatus, mlStatus } = useSSE();
+  const { status, anomalies, resetThreats, latestEvent, logs, threatsList, connectionStatus, totalRequests, chartData, blockchainStatus, ipfsStatus, mlStatus } = useSSE();
 
   const isCritical = status === "ANOMALY DETECTED" || status === "SLASHED";
   
@@ -54,12 +54,26 @@ export default function Dashboard() {
         description="Real-time threat monitoring · Evidence anchoring · Blockchain forensics"
         icon={<LayoutDashboard size={19} />}
         actions={
-          <Badge
-            tone={isCritical ? 'crit' : 'ok'}
-            icon={<LiveDot tone={isCritical ? 'crit' : 'live'} />}
-          >
-            {status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {(anomalies > 0 || isCritical) && (
+              <button
+                type="button"
+                onClick={resetThreats}
+                className="btn btn-sm btn-subtle text-xs flex items-center gap-1.5 cursor-pointer"
+                title="Reset threat telemetry and restore status to SECURE"
+                style={{ padding: '0.35rem 0.65rem' }}
+              >
+                <RotateCcw size={12} />
+                <span>Reset Posture</span>
+              </button>
+            )}
+            <Badge
+              tone={isCritical ? 'crit' : 'ok'}
+              icon={<LiveDot tone={isCritical ? 'crit' : 'live'} />}
+            >
+              {status}
+            </Badge>
+          </div>
         }
       />
 
@@ -75,7 +89,19 @@ export default function Dashboard() {
         <StatCard
           label="Threats Detected"
           value={anomalies}
-          meta="Since last reset"
+          meta={
+            anomalies > 0 ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); resetThreats(); }}
+                className="flex items-center gap-1 text-[11px] font-mono cursor-pointer hover:underline"
+                style={{ color: 'var(--brand)', background: 'transparent', border: 'none', padding: 0 }}
+                title="Click to reset threat counter to 0"
+              >
+                <RotateCcw size={10} /> Reset to 0
+              </button>
+            ) : "Since last reset"
+          }
           icon={<ShieldAlert size={15} />}
           tone={anomalies > 0 ? 'warn' : 'neutral'}
         />
@@ -135,9 +161,22 @@ export default function Dashboard() {
           <div className="mt-4 pt-3.5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <div className="flex items-center justify-between mb-2.5">
               <p className="section-label flex items-center gap-1.5"><Zap size={11} style={{ color: 'var(--warn)' }} /> Attack Simulator</p>
-              <button onClick={triggerStop} className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded transition-colors cursor-pointer hover:text-white" style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                Stop All
-              </button>
+              <div className="flex items-center gap-1.5">
+                {anomalies > 0 && (
+                  <button
+                    type="button"
+                    onClick={resetThreats}
+                    className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-colors cursor-pointer hover:text-white flex items-center gap-1"
+                    style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-subtle)', color: 'var(--warn)' }}
+                    title="Reset threat counter to 0"
+                  >
+                    <RotateCcw size={9} /> Reset
+                  </button>
+                )}
+                <button onClick={triggerStop} className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded transition-colors cursor-pointer hover:text-white" style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                  Stop All
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {[

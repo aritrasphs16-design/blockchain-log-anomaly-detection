@@ -174,6 +174,16 @@ function broadcastState(logMsg = null, eventData = null) {
     clients.forEach(client => client.write(`data: ${JSON.stringify(data)}\n\n`));
 }
 
+// REST: Reset telemetry & anomaly counter back to 0
+app.all(['/reset', '/api/reset'], (req, res) => {
+    anomalyCount = 0;
+    currentServerStatus = "SECURE";
+    logBatch = [];
+    broadcastState("[SYSTEM] Telemetry and security posture reset to SECURE by administrator.");
+    console.log("🛡️ [SYSTEM] Anomaly counter reset to 0, server status restored to SECURE.");
+    res.json({ success: true, anomalies: 0, status: "SECURE" });
+});
+
 // REST: Return all historical batches
 app.get('/batches', (req, res) => {
     res.json(historicalBatches);

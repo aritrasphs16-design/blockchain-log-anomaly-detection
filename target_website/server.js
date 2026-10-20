@@ -160,7 +160,7 @@ app.post('/simulate', (req, res) => {
     res.status(200).send(`Started simulation: ${attack}`);
 });
 
-app.post('/stop', (req, res) => {
+app.post('/stop', async (req, res) => {
     activeSimulations.forEach(child => {
         try {
             child.kill('SIGKILL');
@@ -169,7 +169,15 @@ app.post('/stop', (req, res) => {
         }
     });
     activeSimulations.clear();
-    res.status(200).send("Stopped all active simulations.");
+    blockedIPs.clear();
+
+    // Notify server agent to reset anomaly count & restore SECURE status
+    try {
+        const agentUrl = process.env.AGENT_URL || "http://127.0.0.1:4000";
+        await fetch(`${agentUrl}/reset`, { method: 'POST' }).catch(() => {});
+    } catch (e) {}
+
+    res.status(200).send("Stopped all active simulations and reset firewall.");
 });
 
 app.listen(PORT, () => {

@@ -249,6 +249,15 @@ export function SSEProvider({ children }) {
       if (eventSource) eventSource.close();
       clearInterval(tickInterval);
     };
+  const resetThreats = useCallback(async () => {
+    setAnomalies(0);
+    setStatus("SECURE");
+    setThreatsList([]);
+    try {
+      await fetch(`${agentUrl}/reset`, { method: "POST" });
+    } catch (e) {
+      console.warn("Could not call agent /reset:", e);
+    }
   }, [agentUrl]);
 
   const value = {
@@ -257,6 +266,8 @@ export function SSEProvider({ children }) {
     hash,
     cid,
     anomalies,
+    setAnomalies,
+    resetThreats,
     latestEvent,
     logs,
     rawLogs,
