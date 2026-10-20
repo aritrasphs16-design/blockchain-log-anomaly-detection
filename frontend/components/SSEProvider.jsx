@@ -233,6 +233,13 @@ export function SSEProvider({ children }) {
           setEvidenceBatches(prev => 
             prev.map(b => b.id === data.batchId.toString() || b.id === data.batchId ? { ...b, txHash: data.txHash } : b)
           );
+        } else if (data.type === 'RESET_LEDGER') {
+          setEvidenceBatches([]);
+          setHash("0x0000...0000");
+          setCid("N/A");
+          setAnomalies(0);
+          setStatus("SECURE");
+          setThreatsList([]);
         }
       };
 
@@ -262,6 +269,17 @@ export function SSEProvider({ children }) {
     }
   }, [agentUrl]);
 
+  const resetLedger = useCallback(async () => {
+    setEvidenceBatches([]);
+    setHash("0x0000...0000");
+    setCid("N/A");
+    try {
+      await fetch(`${agentUrl}/batches/reset`, { method: "POST" });
+    } catch (e) {
+      console.warn("Could not call agent /batches/reset:", e);
+    }
+  }, [agentUrl]);
+
   const value = {
     status,
     setStatus,
@@ -270,6 +288,7 @@ export function SSEProvider({ children }) {
     anomalies,
     setAnomalies,
     resetThreats,
+    resetLedger,
     latestEvent,
     logs,
     rawLogs,
@@ -278,6 +297,7 @@ export function SSEProvider({ children }) {
     totalRequests,
     chartData,
     evidenceBatches,
+    setEvidenceBatches,
     networkConfig,
     tokenBalance,
     refreshBalance,

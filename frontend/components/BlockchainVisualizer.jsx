@@ -3,11 +3,11 @@
 import { useSSE } from './SSEProvider';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link as LinkIcon, Database, CheckCircle2, ChevronLeft, ChevronRight, ArrowRight, ExternalLink } from 'lucide-react';
+import { Link as LinkIcon, Database, CheckCircle2, ChevronLeft, ChevronRight, ArrowRight, ExternalLink, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 export function BlockchainVisualizer() {
-  const { hash, cid, evidenceBatches } = useSSE();
+  const { hash, cid, evidenceBatches, resetLedger, setEvidenceBatches } = useSSE();
   const [liveBlocks, setLiveBlocks] = useState([]);
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -108,6 +108,27 @@ export function BlockchainVisualizer() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          {allBlocks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setLiveBlocks([]);
+                if (resetLedger) resetLedger();
+                else if (setEvidenceBatches) setEvidenceBatches([]);
+              }}
+              className="text-[10px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer flex items-center gap-1 hover:text-white"
+              style={{
+                background: 'var(--bg-inset)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-muted)'
+              }}
+              title="Clear all anchored blocks from ledger"
+            >
+              <RotateCcw size={10} />
+              <span>Reset</span>
+            </button>
+          )}
+
           <Link 
             href="/evidence"
             className="text-[10px] font-bold transition-colors flex items-center gap-1 hover:text-cyan-400"

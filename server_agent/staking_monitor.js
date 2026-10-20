@@ -174,14 +174,28 @@ function broadcastState(logMsg = null, eventData = null) {
     clients.forEach(client => client.write(`data: ${JSON.stringify(data)}\n\n`));
 }
 
-// REST: Reset telemetry & anomaly counter back to 0
-app.all(['/reset', '/api/reset'], (req, res) => {
+// REST: Reset telemetry & anomaly counter & historical ledger batches
+app.all(['/reset', '/api/reset', '/batches/reset', '/batches/clear'], (req, res) => {
     anomalyCount = 0;
     currentServerStatus = "SECURE";
     logBatch = [];
-    broadcastState("[SYSTEM] Telemetry and security posture reset to SECURE by administrator.");
-    console.log("🛡️ [SYSTEM] Anomaly counter reset to 0, server status restored to SECURE.");
-    res.json({ success: true, anomalies: 0, status: "SECURE" });
+    historicalBatches = [];
+    batchIdCounter = 1;
+    currentHash = "0x0000...0000";
+    currentIpfsCid = "N/A";
+    previousChainedRoot = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    const resetPayload = {
+        type: 'RESET_LEDGER',
+        anomalies: 0,
+        status: "SECURE",
+        hash: "0x0000...0000",
+        cid: "N/A"
+    };
+    clients.forEach(client => client.write(`data: ${JSON.stringify(resetPayload)}\n\n`));
+    broadcastState("[SYSTEM] Ledger, evidence batches, and threat telemetry reset to initial state.");
+    console.log("🛡️ [SYSTEM] All batches, anomaly count, and ledger reset to initial state.");
+    res.json({ success: true, anomalies: 0, status: "SECURE", batches: 0 });
 });
 
 // REST: Return all historical batches
